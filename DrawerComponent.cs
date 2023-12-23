@@ -16,7 +16,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
     public ZNetView _znv;
     private Image _image;
     private static Sprite _defaultSprite;
-    private TMP_Text _text;
+    private TMP_Text _text; 
 
     public string CurrentPrefab
     {
@@ -293,3 +293,4 @@ public static class Piece_OnDestroy_Patch
         }
     }
 }
+

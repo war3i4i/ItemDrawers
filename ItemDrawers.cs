@@ -11,14 +11,15 @@ using JetBrains.Annotations;
 using PieceManager;
 using ServerSync;
 using UnityEngine;
+using UnityEngine.Audio;
 
 namespace ItemDrawers
 {
-    [BepInPlugin(GUID, GUID, VERSION)]
+    [BepInPlugin(GUID, GUID, VERSION)] 
     public class ItemDrawers : BaseUnityPlugin
     {
         private const string GUID = "kg.ItemDrawers";
-        private const string VERSION = "1.0.3";
+        private const string VERSION = "1.0.4";
         private static ConfigSync configSync = new(GUID) { DisplayName = GUID, CurrentVersion = VERSION, MinimumRequiredVersion = VERSION, ModRequired = true, IsLocked = true};
         public static ItemDrawers _thistype;
         private static AssetBundle asset;
@@ -89,7 +90,7 @@ namespace ItemDrawers
             [UsedImplicitly]
             private static void Postfix(AudioMan __instance) 
             {
-                var SFXgroup = __instance.m_masterMixer.FindMatchingGroups("SFX")[0];
+                AudioMixerGroup SFXgroup = __instance.m_masterMixer.FindMatchingGroups("SFX")[0];
                 foreach (GameObject go in asset.LoadAllAssets<GameObject>())
                 {
                     foreach (AudioSource audioSource in go.GetComponentsInChildren<AudioSource>(true))

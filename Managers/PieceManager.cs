@@ -1344,7 +1344,7 @@ public static class PiecePrefabManager
 
     public static IEnumerable<GameObject> FixRefs(AssetBundle assetBundle)
     {
-        var allshits = assetBundle.LoadAllAssets<GameObject>();
+        GameObject[] allshits = assetBundle.LoadAllAssets<GameObject>();
         return allshits;
     }
 
@@ -1398,7 +1398,7 @@ public static class PiecePrefabManager
             return;
         }
 
-        var categories = new Piece.PieceCategory[__result.Length + PieceCategories.Count];
+        Piece.PieceCategory[] categories = new Piece.PieceCategory[__result.Length + PieceCategories.Count];
 
         __result.CopyTo(categories, 0);
         PieceCategories.Values.CopyTo(categories, __result.Length);
@@ -1423,10 +1423,10 @@ public static class PiecePrefabManager
 
     public static Dictionary<Piece.PieceCategory, string> GetPieceCategoriesMap()
     {
-        var values = Enum.GetValues(typeof(Piece.PieceCategory));
-        var names = Enum.GetNames(typeof(Piece.PieceCategory));
+        Array values = Enum.GetValues(typeof(Piece.PieceCategory));
+        string[] names = Enum.GetNames(typeof(Piece.PieceCategory));
 
-        var map = new Dictionary<Piece.PieceCategory, string>();
+        Dictionary<Piece.PieceCategory, string> map = new Dictionary<Piece.PieceCategory, string>();
 
         for (int i = 0; i < values.Length; i++)
         {
@@ -1453,9 +1453,9 @@ public static class PiecePrefabManager
             return category;
         }
 
-        var categories = GetPieceCategoriesMap();
+        Dictionary<Piece.PieceCategory, string> categories = GetPieceCategoriesMap();
 
-        foreach (var categoryPair in categories)
+        foreach (KeyValuePair<Piece.PieceCategory, string> categoryPair in categories)
         {
             if (categoryPair.Value == name)
             {
@@ -1506,7 +1506,7 @@ public static class PiecePrefabManager
         newTab.SetActive(false);
         newTab.GetOrAddComponent<UIInputHandler>().m_onLeftDown += Hud.instance.OnLeftClickCategory;
 
-        foreach (var text in newTab.GetComponentsInChildren<TMP_Text>())
+        foreach (TMP_Text text in newTab.GetComponentsInChildren<TMP_Text>())
         {
             text.rectTransform.offsetMin = new Vector2(3, 1);
             text.rectTransform.offsetMax = new Vector2(-3, -1);
@@ -1690,7 +1690,7 @@ public static class PiecePrefabManager
             return;
         }
 
-        var selectedTab = Hud.instance.m_pieceCategoryTabs[(int)__instance.m_selectedCategory];
+        GameObject selectedTab = Hud.instance.m_pieceCategoryTabs[(int)__instance.m_selectedCategory];
 
         if (selectedTab.name.Contains(_hiddenCategoryMagic))
         {
@@ -1705,7 +1705,7 @@ public static class PiecePrefabManager
             return;
         }
 
-        var selectedTab = Hud.instance.m_pieceCategoryTabs[(int)__instance.m_selectedCategory];
+        GameObject selectedTab = Hud.instance.m_pieceCategoryTabs[(int)__instance.m_selectedCategory];
 
         if (selectedTab.name.Contains(_hiddenCategoryMagic))
         {

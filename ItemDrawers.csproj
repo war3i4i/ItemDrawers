@@ -8,8 +8,8 @@
         <ProjectGuid>{BDB57018-2084-48D9-AD7C-2EE1BAA291EC}</ProjectGuid>
         <OutputType>Library</OutputType>
         <AppDesignerFolder>Properties</AppDesignerFolder>
-        <RootNamespace>ItemDrawers</RootNamespace>
-        <AssemblyName>ItemDrawers</AssemblyName>
+        <RootNamespace>kg_ItemDrawers</RootNamespace>
+        <AssemblyName>kg_ItemDrawers</AssemblyName>
         <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
         <LangVersion>latest</LangVersion>
@@ -116,6 +116,7 @@
         <Compile Include="ItemDrawers.cs" />
         <Compile Include="Managers\PieceManager.cs" />
         <Compile Include="Managers\ServerSync.cs" />
+        <Compile Include="OldDrawers\ConvertMakailDrawers.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
         <Compile Include="Utils.cs" />
     </ItemGroup>
@@ -124,7 +125,7 @@
     </ItemGroup>
     <ItemGroup>
       <Content Include="ThunderstorePackage\icon.png" />
-      <Content Include="ThunderstorePackage\ItemDrawers.dll" />
+      <Content Include="ThunderstorePackage\kg_ItemDrawers.dll" />
       <Content Include="ThunderstorePackage\manifest.json" />
       <Content Include="ThunderstorePackage\README.md" />
     </ItemGroup>
