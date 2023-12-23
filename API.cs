@@ -13,18 +13,18 @@ public static class ItemDrawers_API
 {
     private static readonly bool _IsInstalled;
     private static readonly MethodInfo MI_GetAllDrawers;
-    
-    public static List<ZNetView> AllDrawers => _IsInstalled ? (List<ZNetView>) MI_GetAllDrawers.Invoke(null, null) : new();
-    public static string GetDrawerPrefab(ZNetView drawer) => drawer.m_zdo.GetString("Prefab");
-    public static int GetDrawerAmount(ZNetView drawer) => drawer.m_zdo.GetInt("Amount");
-    public static void DrawerRemoveItem(ZNetView drawer, int amount)
+
+    public class Drawer(ZNetView znv)
     {
-        drawer.ClaimOwnership();
-        drawer.InvokeRPC("ForceRemove", amount);
+        public string Prefab = znv.m_zdo.GetString("Prefab");
+        public int Amount = znv.m_zdo.GetInt("Amount");
+        public void Remove(int amount) { znv.ClaimOwnership(); znv.InvokeRPC("ForceRemove", amount); }
+        public void Withdraw(int amount) => znv.InvokeRPC("WithdrawItem_Request", amount);
     }
 
-    public static void DrawerWithdraw(ZNetView drawer, int amount) =>
-        drawer.InvokeRPC("WithdrawItem_Request", amount);
+    public static List<Drawer> AllDrawers => _IsInstalled ? 
+        ((List<ZNetView>)MI_GetAllDrawers.Invoke(null, null)).Select(znv => new Drawer(znv)).ToList() 
+        : new();
     
     static ItemDrawers_API()
     {
