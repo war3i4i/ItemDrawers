@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using HarmonyLib;
 using JetBrains.Annotations;
@@ -42,6 +43,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
     public struct DrawerOptions : ISerializableParameter
     {
         public Color color;
+
         public void Serialize(ref ZPackage pkg)
         {
             pkg.Write(global::Utils.ColorToVec3(color));
@@ -52,8 +54,9 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
             color = global::Utils.Vec3ToColor(pkg.ReadVector3());
         }
     }
-    
+
     private void OnDestroy() => AllDrawers.Remove(this);
+
     private void Awake()
     {
         _znv = GetComponent<ZNetView>();
@@ -79,6 +82,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
         {
             CurrentColor = options.color;
         }
+
         _text.color = options.color;
     }
 
@@ -98,6 +102,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
             _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", "", 0);
             return;
         }
+
         if (amount <= 0) return;
         amount = Mathf.Min(amount, CurrentAmount);
         CurrentAmount -= amount;
@@ -106,6 +111,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
     }
 
     private void RPC_AddItem_Player(long _, string prefab, int amount) => Utils.InstantiateItem(ZNetScene.instance.GetPrefab(prefab), amount, 1);
+
     private void RPC_UpdateIcon(long _, string prefab, int amount)
     {
         if (!ItemValid)
@@ -142,28 +148,22 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
         if (!ItemValid || !Player.m_localPlayer) return;
 
         Vector3 vector = transform.position + Vector3.up;
-        foreach (Collider collider in Physics.OverlapSphere(vector, ItemDrawers.DrawerPickupRange.Value, Player.m_localPlayer.m_autoPickupMask))
+        foreach (ItemDrop component in ItemDrop.s_instances.Where(drop => Vector3.Distance(drop.transform.position, vector) < ItemDrawers.DrawerPickupRange.Value))
         {
-            if (collider.attachedRigidbody)
+            string goName = global::Utils.GetPrefabName(component.gameObject);
+            if (goName != CurrentPrefab) continue;
+            if (!component.CanPickup(false))
             {
-                ItemDrop component = collider.attachedRigidbody.GetComponent<ItemDrop>();
-                string goName = global::Utils.GetPrefabName(component.gameObject);
-                if (goName == CurrentPrefab)
-                {
-                    if (!component.CanPickup(false))
-                    {
-                        component.RequestOwn();
-                        continue;
-                    }
-
-                    Instantiate(ItemDrawers.Explosion, component.transform.position, Quaternion.identity);
-                    int amount = component.m_itemData.m_stack;
-                    component.m_nview.ClaimOwnership();
-                    ZNetScene.instance.Destroy(component.gameObject);
-                    CurrentAmount += amount;
-                    _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
-                }
+                component.RequestOwn();
+                continue;
             }
+
+            Instantiate(ItemDrawers.Explosion, component.transform.position, Quaternion.identity);
+            int amount = component.m_itemData.m_stack;
+            component.m_nview.ClaimOwnership();
+            ZNetScene.instance.Destroy(component.gameObject);
+            CurrentAmount += amount;
+            _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
         }
     }
 
@@ -176,7 +176,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
             TextInput.instance.RequestText(this, "Enter text color: (#RRGGBB or R,G,B format)", 32);
             return true;
         }
-        
+
         if (Input.GetKey(KeyCode.LeftAlt))
         {
             _znv.InvokeRPC("WithdrawItem_Request", 1);
@@ -191,7 +191,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
             _znv.InvokeRPC("AddItem_Request", CurrentPrefab, amount);
             return true;
         }
-        
+
         _znv.InvokeRPC("WithdrawItem_Request", ItemMaxStack);
         return true;
     }
@@ -228,7 +228,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
         {
             sb.AppendLine($"[<color=yellow><b>$KEY_Use</b></color>] to change text color");
             return sb.ToString().Localize();
-        } 
+        }
 
         sb.AppendLine($"<color=yellow><b>{LocalizedName}</b></color> ({CurrentAmount})");
         sb.AppendLine("<color=yellow><b>Use Hotbar to add item</b></color>\n");
@@ -273,6 +273,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
                 }
             }
         }
+
         _znv.InvokeRPC(ZNetView.Everybody, "ApplyOptions", options);
     }
 }
