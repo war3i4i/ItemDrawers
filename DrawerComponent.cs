@@ -136,7 +136,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
             return;
         }
 
-        int newAmount = CurrentAmount + amount;
+        int newAmount = ItemValid ? (CurrentAmount + amount) : amount;
         CurrentAmount = newAmount;
         if (CurrentPrefab != prefab) CurrentPrefab = prefab;
         _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", prefab, newAmount);

@@ -39,6 +39,7 @@ public static class ConvertMakailDrawers
                 }
                 catch{}
             }
+            tempInventory.m_inventory.Clear();
         } 
         
         [UsedImplicitly]
