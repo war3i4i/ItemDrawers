@@ -18,7 +18,7 @@ namespace ItemDrawers
     public class ItemDrawers : BaseUnityPlugin
     {
         private const string GUID = "kg.ItemDrawers";
-        private const string VERSION = "1.0.1";
+        private const string VERSION = "1.0.2";
         private static ConfigSync configSync = new(GUID) { DisplayName = GUID, CurrentVersion = VERSION, MinimumRequiredVersion = VERSION, ModRequired = true, IsLocked = true};
         public static ItemDrawers _thistype;
         private static AssetBundle asset;

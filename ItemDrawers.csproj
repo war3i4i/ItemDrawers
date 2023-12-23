@@ -111,6 +111,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="API.cs" />
         <Compile Include="DrawerComponent.cs" />
         <Compile Include="ItemDrawers.cs" />
         <Compile Include="Managers\PieceManager.cs" />
@@ -120,6 +121,12 @@
     </ItemGroup>
     <ItemGroup>
       <EmbeddedResource Include="kg_itemdrawers" />
+    </ItemGroup>
+    <ItemGroup>
+      <Content Include="ThunderstorePackage\icon.png" />
+      <Content Include="ThunderstorePackage\ItemDrawers.dll" />
+      <Content Include="ThunderstorePackage\manifest.json" />
+      <Content Include="ThunderstorePackage\README.md" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

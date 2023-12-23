@@ -1,7 +1,7 @@
 {
     "name": "ItemDrawers",
     "version_number": "1.0.1",
-    "website_url": "",
+    "website_url": "https://github.com/war3i4i/ItemDrawers",
     "description": "Rework of ItemDrawers mod",
     "dependencies": [
         "denikson-BepInExPack_Valheim-5.4.2202"
