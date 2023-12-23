@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 namespace ItemDrawers;
 
-public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
+public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextReceiver
 {
     public static readonly List<DrawerComponent> AllDrawers = [];
     public ZNetView _znv;
@@ -29,12 +29,31 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         set => _znv.m_zdo.Set("Amount", value);
     }
 
+    private Color CurrentColor
+    {
+        get => global::Utils.Vec3ToColor(_znv.m_zdo.GetVec3("Color", Vector3.right));
+        set => _znv.m_zdo.Set("Color", global::Utils.ColorToVec3(value));
+    }
+
     public bool ItemValid => !string.IsNullOrEmpty(CurrentPrefab) && ObjectDB.instance.m_itemByHash.ContainsKey(CurrentPrefab.GetStableHashCode());
     private int ItemMaxStack => ObjectDB.instance.m_itemByHash[CurrentPrefab.GetStableHashCode()].GetComponent<ItemDrop>().m_itemData.m_shared.m_maxStackSize;
     private string LocalizedName => ObjectDB.instance.GetItemPrefab(CurrentPrefab).GetComponent<ItemDrop>().m_itemData.m_shared.m_name.Localize();
 
-    private void OnDestroy() => AllDrawers.Remove(this);
+    public struct DrawerOptions : ISerializableParameter
+    {
+        public Color color;
+        public void Serialize(ref ZPackage pkg)
+        {
+            pkg.Write(global::Utils.ColorToVec3(color));
+        }
 
+        public void Deserialize(ref ZPackage pkg)
+        {
+            color = global::Utils.Vec3ToColor(pkg.ReadVector3());
+        }
+    }
+    
+    private void OnDestroy() => AllDrawers.Remove(this);
     private void Awake()
     {
         _znv = GetComponent<ZNetView>();
@@ -43,19 +62,24 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         _image = transform.Find("Cube/Canvas/Image").GetComponent<Image>();
         _defaultSprite ??= _image.sprite;
         _text = transform.Find("Cube/Canvas/Text").GetComponent<TMP_Text>();
+        _text.color = CurrentColor;
         _znv.Register<string, int>("AddItem_Request", RPC_AddItem);
         _znv.Register<string, int>("AddItem_Player", RPC_AddItem_Player);
         _znv.Register<int>("WithdrawItem_Request", RPC_WithdrawItem_Request);
         _znv.Register<string, int>("UpdateIcon", RPC_UpdateIcon);
         _znv.Register<int>("ForceRemove", RPC_ForceRemove);
+        _znv.Register<DrawerOptions>("ApplyOptions", RPC_ApplyOptions);
         RPC_UpdateIcon(0, CurrentPrefab, CurrentAmount);
         InvokeRepeating(nameof(Repeat_1s), 1f, 1f);
     }
 
-    public void ForceRemove()
+    private void RPC_ApplyOptions(long sender, DrawerOptions options)
     {
-        _znv.ClaimOwnership();
-        _znv.InvokeRPC("ForceRemove", CurrentAmount);
+        if (_znv.IsOwner())
+        {
+            CurrentColor = options.color;
+        }
+        _text.color = options.color;
     }
 
     private void RPC_ForceRemove(long sender, int amount)
@@ -146,6 +170,13 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     public bool Interact(Humanoid user, bool hold, bool alt)
     {
         if (!ItemValid) return false;
+
+        if (user.IsCrouching())
+        {
+            TextInput.instance.RequestText(this, "Enter text color: (#RRGGBB or R,G,B format)", 32);
+            return true;
+        }
+        
         if (Input.GetKey(KeyCode.LeftAlt))
         {
             _znv.InvokeRPC("WithdrawItem_Request", 1);
@@ -193,6 +224,12 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             return sb.ToString().Localize();
         }
 
+        if (Player.m_localPlayer.IsCrouching())
+        {
+            sb.AppendLine($"[<color=yellow><b>$KEY_Use</b></color>] to change text color");
+            return sb.ToString().Localize();
+        } 
+
         sb.AppendLine($"<color=yellow><b>{LocalizedName}</b></color> ({CurrentAmount})");
         sb.AppendLine("<color=yellow><b>Use Hotbar to add item</b></color>\n");
         if (CurrentAmount <= 0)
@@ -211,6 +248,32 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     public string GetHoverName()
     {
         return "Item Drawer";
+    }
+
+    public string GetText()
+    {
+        return "";
+    }
+
+    public void SetText(string text)
+    {
+        DrawerOptions options = new() { color = Color.red };
+        if (ColorUtility.TryParseHtmlString(text, out Color color))
+        {
+            options.color = color;
+        }
+        else
+        {
+            string[] split = text.Replace(" ", "").Split(',');
+            if (split.Length == 3)
+            {
+                if (byte.TryParse(split[0], out byte r) && byte.TryParse(split[1], out byte g) && byte.TryParse(split[2], out byte b))
+                {
+                    options.color = new Color32(r, g, b, 255);
+                }
+            }
+        }
+        _znv.InvokeRPC(ZNetView.Everybody, "ApplyOptions", options);
     }
 }
 

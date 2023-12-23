@@ -20,6 +20,7 @@ public static class ItemDrawers_API
         public int Amount = znv.m_zdo.GetInt("Amount");
         public void Remove(int amount) { znv.ClaimOwnership(); znv.InvokeRPC("ForceRemove", amount); }
         public void Withdraw(int amount) => znv.InvokeRPC("WithdrawItem_Request", amount);
+        public void Add(int amount) => znv.InvokeRPC("AddItem_Request", Prefab, amount);
     }
 
     public static List<Drawer> AllDrawers => _IsInstalled ? 
