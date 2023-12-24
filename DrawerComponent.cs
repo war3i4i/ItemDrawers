@@ -8,7 +8,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace ItemDrawers;
+namespace kg_ItemDrawers;
 
 public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextReceiver
 {

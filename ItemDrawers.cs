@@ -13,7 +13,7 @@ using ServerSync;
 using UnityEngine;
 using UnityEngine.Audio;
 
-namespace ItemDrawers
+namespace kg_ItemDrawers
 {
     [BepInPlugin(GUID, GUID, VERSION)] 
     public class ItemDrawers : BaseUnityPlugin

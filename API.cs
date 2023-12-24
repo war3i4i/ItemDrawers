@@ -1,9 +1,8 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using ItemDrawers;
+using kg_ItemDrawers;
 using UnityEngine;
 
 namespace API;
@@ -29,7 +28,7 @@ public static class ItemDrawers_API
     
     static ItemDrawers_API()
     {
-        if (Type.GetType("API.ClientSide, ItemDrawers") is not { } drawersAPI)
+        if (Type.GetType("API.ClientSide, kg_ItemDrawers") is not { } drawersAPI)
         {
             _IsInstalled = false;
             return;

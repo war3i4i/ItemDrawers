@@ -2,7 +2,7 @@
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace ItemDrawers;
+namespace kg_ItemDrawers;
 
 public static class Utils
 {
