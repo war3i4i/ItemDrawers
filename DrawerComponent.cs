@@ -38,7 +38,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
 
     public bool ItemValid => !string.IsNullOrEmpty(CurrentPrefab) && ObjectDB.instance.m_itemByHash.ContainsKey(CurrentPrefab.GetStableHashCode());
     private int ItemMaxStack => ObjectDB.instance.m_itemByHash[CurrentPrefab.GetStableHashCode()].GetComponent<ItemDrop>().m_itemData.m_shared.m_maxStackSize;
-    private string LocalizedName => ObjectDB.instance.GetItemPrefab(CurrentPrefab).GetComponent<ItemDrop>().m_itemData.m_shared.m_name.Localize();
+    private string LocalizedName => ObjectDB.instance.m_itemByHash[CurrentPrefab.GetStableHashCode()].GetComponent<ItemDrop>().m_itemData.m_shared.m_name.Localize();
 
     public struct DrawerOptions : ISerializableParameter
     {

@@ -7,7 +7,9 @@ using UnityEngine;
 
 namespace API;
 
-//class to copy
+// class to copy. keep in mind that AllDrawers should not be cached in any case since Prefab and Amount are applied once so it will be outdated,
+// also there is no IsValid() check so next frame Drawer can be destroyed and you will get null reference exception
+// best usage: call AllDrawers() every time you need it and process it in the same frame
 public static class ItemDrawers_API
 {
     private static readonly bool _IsInstalled;

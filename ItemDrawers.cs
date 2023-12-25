@@ -19,7 +19,7 @@ namespace kg_ItemDrawers
     public class ItemDrawers : BaseUnityPlugin
     {
         private const string GUID = "kg.ItemDrawers";
-        private const string VERSION = "1.0.4";
+        private const string VERSION = "1.0.5";
         private static ConfigSync configSync = new(GUID) { DisplayName = GUID, CurrentVersion = VERSION, MinimumRequiredVersion = VERSION, ModRequired = true, IsLocked = true};
         public static ItemDrawers _thistype;
         private static AssetBundle asset;
@@ -30,6 +30,9 @@ namespace kg_ItemDrawers
         private static BuildPiece _drawer_wood;
         private static BuildPiece _drawer_stone;
         private static BuildPiece _drawer_marble;
+        private static BuildPiece _drawer_wood_panel;
+        private static BuildPiece _drawer_stone_panel;
+        private static BuildPiece _drawer_marble_panel;
         public static GameObject Explosion;
      
         
@@ -62,10 +65,31 @@ namespace kg_ItemDrawers
              
             _drawer_marble = new BuildPiece(asset, "kg_ItemDrawer_Marble");
             _drawer_marble.Name.English("Marble Item Drawer");
-            _drawer_marble.Prefab.AddComponent<DrawerComponent>();
+            _drawer_marble.Prefab.AddComponent<DrawerComponent>(); 
             _drawer_marble.Category.Set("Item Drawers");
             _drawer_marble.Crafting.Set(CraftingTable.None);
             _drawer_marble.RequiredItems.Add("BlackMarble", 10, true); 
+            
+            _drawer_wood_panel = new BuildPiece(asset, "kg_ItemDrawerPanel_Wood");
+            _drawer_wood_panel.Name.English("Wooden Item Drawer Panel");
+            _drawer_wood_panel.Prefab.AddComponent<DrawerComponent>();
+            _drawer_wood_panel.Category.Set("Item Drawers");
+            _drawer_wood_panel.Crafting.Set(CraftingTable.None);
+            _drawer_wood_panel.RequiredItems.Add("Wood", 10, true); 
+           
+            _drawer_stone_panel = new BuildPiece(asset, "kg_ItemDrawerPanel_Stone");
+            _drawer_stone_panel.Name.English("Stone Item Drawer Panel");
+            _drawer_stone_panel.Prefab.AddComponent<DrawerComponent>();
+            _drawer_stone_panel.Category.Set("Item Drawers");
+            _drawer_stone_panel.Crafting.Set(CraftingTable.None);
+            _drawer_stone_panel.RequiredItems.Add("Stone", 10, true);
+         
+            _drawer_marble_panel = new BuildPiece(asset, "kg_ItemDrawerPanel_Marble");
+            _drawer_marble_panel.Name.English("Marble Item Drawer Panel");
+            _drawer_marble_panel.Prefab.AddComponent<DrawerComponent>();
+            _drawer_marble_panel.Category.Set("Item Drawers");
+            _drawer_marble_panel.Crafting.Set(CraftingTable.None);
+            _drawer_marble_panel.RequiredItems.Add("BlackMarble", 10, true);
             
             new Harmony(GUID).PatchAll(); 
         }  
@@ -81,6 +105,9 @@ namespace kg_ItemDrawers
                 _drawer_wood.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("woodwall").GetComponent<Piece>().m_placeEffect;
                 _drawer_stone.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("stone_wall_1x1").GetComponent<Piece>().m_placeEffect;
                 _drawer_marble.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("blackmarble_1x1").GetComponent<Piece>().m_placeEffect;
+                _drawer_wood_panel.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("woodwall").GetComponent<Piece>().m_placeEffect;
+                _drawer_stone_panel.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("stone_wall_1x1").GetComponent<Piece>().m_placeEffect;
+                _drawer_marble_panel.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("blackmarble_1x1").GetComponent<Piece>().m_placeEffect;
             }
         }
         
@@ -97,7 +124,7 @@ namespace kg_ItemDrawers
                         audioSource.outputAudioMixerGroup = SFXgroup;
                 }
             }
-        }
+        } 
 
         private void ResetList(object sender, EventArgs eventArgs) => 
             IncludeSet = new HashSet<string>(IncludeList.Value.Replace(" ", "").Split(','));

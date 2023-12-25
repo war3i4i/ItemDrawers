@@ -18,7 +18,6 @@ public static class ConvertMakailDrawers
         {
             List<ZDO> oldDrawers = list.FindAll(zdo => zdo.m_prefab == ToSearch);
             if (oldDrawers.Count == 0) return;
-            Inventory tempInventory = new("temp", null, 4, 4);
             foreach (ZDO zdo in oldDrawers)
             {
                 zdo.m_prefab = "kg_ItemDrawer_Wood".GetStableHashCode();
@@ -39,8 +38,7 @@ public static class ConvertMakailDrawers
                 }
                 catch{}
             }
-            tempInventory.m_inventory.Clear();
-        } 
+        }
         
         [UsedImplicitly]
         private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> code)
