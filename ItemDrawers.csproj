@@ -124,6 +124,7 @@
       <EmbeddedResource Include="kg_itemdrawers" />
     </ItemGroup>
     <ItemGroup>
+      <Content Include="ThunderstorePackage\CHANGELOG.md" />
       <Content Include="ThunderstorePackage\icon.png" />
       <Content Include="ThunderstorePackage\kg_ItemDrawers.dll" />
       <Content Include="ThunderstorePackage\manifest.json" />
@@ -137,5 +138,14 @@
     <Target Name="AfterBuild">
     </Target>
     -->
+
+
+    <Target Name="Copy" AfterTargets="Build">
+        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;D:\SteamLibrary\steamapps\common\Valheim\BepInEx\plugins\$(AssemblyName).dll&quot;" />
+        <Exec Command="pdb2mdb.exe &quot;$(TargetDir)$(AssemblyName).dll&quot;" />
+        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll.mdb&quot; &quot;D:\SteamLibrary\steamapps\common\Valheim\BepInEx\plugins\$(AssemblyName).dll.mdb&quot;" />
+        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;$(ProjectDir)ThunderstorePackage\$(AssemblyName).dll&quot;" />
+        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll.mdb&quot; &quot;$(ProjectDir)ThunderstorePackage\$(AssemblyName).dll.mdb&quot;" />
+    </Target>
 
 </Project>

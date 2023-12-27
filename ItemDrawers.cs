@@ -17,7 +17,7 @@ namespace kg_ItemDrawers
 {
     [BepInPlugin(GUID, GUID, VERSION)] 
     public class ItemDrawers : BaseUnityPlugin
-    {
+    { 
         private const string GUID = "kg.ItemDrawers";
         private const string VERSION = "1.0.5";
         private static ConfigSync configSync = new(GUID) { DisplayName = GUID, CurrentVersion = VERSION, MinimumRequiredVersion = VERSION, ModRequired = true, IsLocked = true};
@@ -33,6 +33,7 @@ namespace kg_ItemDrawers
         private static BuildPiece _drawer_wood_panel;
         private static BuildPiece _drawer_stone_panel;
         private static BuildPiece _drawer_marble_panel;
+        private static BuildPiece _drawer_nomodel;
         public static GameObject Explosion;
      
         
@@ -76,7 +77,7 @@ namespace kg_ItemDrawers
             _drawer_wood_panel.Category.Set("Item Drawers");
             _drawer_wood_panel.Crafting.Set(CraftingTable.None);
             _drawer_wood_panel.RequiredItems.Add("Wood", 10, true); 
-           
+            
             _drawer_stone_panel = new BuildPiece(asset, "kg_ItemDrawerPanel_Stone");
             _drawer_stone_panel.Name.English("Stone Item Drawer Panel");
             _drawer_stone_panel.Prefab.AddComponent<DrawerComponent>();
@@ -91,7 +92,14 @@ namespace kg_ItemDrawers
             _drawer_marble_panel.Crafting.Set(CraftingTable.None);
             _drawer_marble_panel.RequiredItems.Add("BlackMarble", 10, true);
             
-            new Harmony(GUID).PatchAll(); 
+            _drawer_nomodel = new BuildPiece(asset, "kg_ItemDrawer_NoModel");
+            _drawer_nomodel.Name.English("Item Drawer (No Model)");
+            _drawer_nomodel.Prefab.AddComponent<DrawerComponent>();
+            _drawer_nomodel.Category.Set("Item Drawers");
+            _drawer_nomodel.Crafting.Set(CraftingTable.None);
+            _drawer_nomodel.RequiredItems.Add("GreydwarfEye", 10, true);
+            
+            new Harmony(GUID).PatchAll();  
         }  
     
         [HarmonyPatch(typeof(ZNetScene),nameof(ZNetScene.Awake))]
@@ -108,6 +116,7 @@ namespace kg_ItemDrawers
                 _drawer_wood_panel.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("woodwall").GetComponent<Piece>().m_placeEffect;
                 _drawer_stone_panel.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("stone_wall_1x1").GetComponent<Piece>().m_placeEffect;
                 _drawer_marble_panel.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("blackmarble_1x1").GetComponent<Piece>().m_placeEffect;
+                _drawer_nomodel.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("woodwall").GetComponent<Piece>().m_placeEffect;
             }
         }
         

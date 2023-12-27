@@ -39,10 +39,10 @@ public static class ItemDrawers_API
         _IsInstalled = true;
         MI_GetAllDrawers = drawersAPI.GetMethod("AllDrawers", BindingFlags.Public | BindingFlags.Static);
     }
-}
+} 
 
 //do not copy
 public static class ClientSide
 {
-    public static List<ZNetView> AllDrawers() => DrawerComponent.AllDrawers.Select(d => d._znv).ToList();
+    public static List<ZNetView> AllDrawers() => DrawerComponent.AllDrawers.Where(d => d._znv.IsValid()).Select(d => d._znv).ToList();
 }
