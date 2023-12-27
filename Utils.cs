@@ -52,7 +52,7 @@ public static class Utils
             {
                 int addStack = Math.Min(stack, item.m_itemData.m_shared.m_maxStackSize);
                 stack -= addStack;
-                ItemDrop itemDrop = Object.Instantiate(prefab, p.transform.position, Quaternion.identity).GetComponent<ItemDrop>();
+                ItemDrop itemDrop = Object.Instantiate(prefab, p.transform.position + Vector3.up * 1.5f, Quaternion.identity).GetComponent<ItemDrop>();
                 itemDrop.m_itemData.m_stack = addStack;
                 itemDrop.m_itemData.m_durability = item.m_itemData.GetMaxDurability();
                 itemDrop.Save();
