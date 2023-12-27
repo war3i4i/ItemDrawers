@@ -1,3 +1,7 @@
+1.0.6
+- Added options UI when you crouch + interact
+- Added DefaultColor + MaxDrawerPickupRange settings 
+
 1.0.5
 - Added new drawer styles: Panel_Wood, Panel_Stone, Panel_Marble, NoModel
 - Fixed API issues

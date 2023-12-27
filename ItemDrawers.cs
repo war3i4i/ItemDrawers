@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
 using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -25,6 +24,8 @@ namespace kg_ItemDrawers
         private static AssetBundle asset;
 
         public static ConfigEntry<int> DrawerPickupRange;
+        public static ConfigEntry<int> MaxDrawerPickupRange;
+        public static ConfigEntry<Vector3> DefaultColor;
         private static ConfigEntry<string> IncludeList;
         public static HashSet<string> IncludeSet = new();
         private static BuildPiece _drawer_wood;
@@ -35,17 +36,19 @@ namespace kg_ItemDrawers
         private static BuildPiece _drawer_marble_panel;
         private static BuildPiece _drawer_nomodel;
         public static GameObject Explosion;
-     
-        
+
+        private void OnGUI() => DrawerComponent.ProcessGUI();
+        private void Update() => DrawerComponent.ProcessInput();
+
         private void Awake()
         {
             _thistype = this;
-            
             IncludeList = config("General", "IncludeList", "DragonEgg", "List of items with max stack size 1 to include in the drawer. Leave blank to include all items.");
             IncludeList.SettingChanged += ResetList;
             ResetList(null, null);
             DrawerPickupRange = config("General", "DrawerPickupRange", 4, "Range at which you can pick up items from the drawer.");
-            
+            MaxDrawerPickupRange = config("General", "MaxDrawerPickupRange", 100, "Maximum range at which you can pick up items from the drawer.");
+            DefaultColor = config("General", "DefaultColor", Vector3.right, "Default color of the drawer text.");
             asset = GetAssetBundle("kg_itemdrawers");
             
             Explosion = asset.LoadAsset<GameObject>("kg_ItemDrawer_Explosion");

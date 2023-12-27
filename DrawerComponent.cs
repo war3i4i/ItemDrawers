@@ -1,22 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using HarmonyLib;
 using JetBrains.Annotations;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 namespace kg_ItemDrawers;
 
-public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextReceiver
+public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
 {
     public static readonly List<DrawerComponent> AllDrawers = [];
-    public ZNetView _znv;
-    private Image _image;
     private static Sprite _defaultSprite;
+    public ZNetView _znv { private set; get; }
+    private Image _image;
     private TMP_Text _text; 
+    
+    //UI
+    private static bool ShowUI;
+    private static DrawerOptions CurrentOptions;
+    //
 
     public string CurrentPrefab
     {
@@ -30,9 +36,15 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
         set => _znv.m_zdo.Set("Amount", value);
     }
 
-    private Color CurrentColor
+    public int PickupRange
     {
-        get => global::Utils.Vec3ToColor(_znv.m_zdo.GetVec3("Color", Vector3.right));
+        get => _znv.m_zdo.GetInt("PickupRange", ItemDrawers.DrawerPickupRange.Value);
+        set => _znv.m_zdo.Set("PickupRange", value);
+    }
+
+    private Color CurrentColor 
+    {
+        get => global::Utils.Vec3ToColor(_znv.m_zdo.GetVec3("Color", ItemDrawers.DefaultColor.Value));
         set => _znv.m_zdo.Set("Color", global::Utils.ColorToVec3(value));
     }
 
@@ -40,23 +52,26 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
     private int ItemMaxStack => ObjectDB.instance.m_itemByHash[CurrentPrefab.GetStableHashCode()].GetComponent<ItemDrop>().m_itemData.m_shared.m_maxStackSize;
     private string LocalizedName => ObjectDB.instance.m_itemByHash[CurrentPrefab.GetStableHashCode()].GetComponent<ItemDrop>().m_itemData.m_shared.m_name.Localize();
 
-    public struct DrawerOptions : ISerializableParameter
+    private struct DrawerOptions : ISerializableParameter
     {
-        public Color color;
+        public DrawerComponent drawer;
+        public Color32 color;
+        public int pickupRange;
 
         public void Serialize(ref ZPackage pkg)
         {
             pkg.Write(global::Utils.ColorToVec3(color));
+            pkg.Write(pickupRange);
         }
 
         public void Deserialize(ref ZPackage pkg)
         {
             color = global::Utils.Vec3ToColor(pkg.ReadVector3());
+            pickupRange = pkg.ReadInt();
         }
     }
 
     private void OnDestroy() => AllDrawers.Remove(this);
-
     private void Awake()
     {
         _znv = GetComponent<ZNetView>();
@@ -73,7 +88,8 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
         _znv.Register<int>("ForceRemove", RPC_ForceRemove);
         _znv.Register<DrawerOptions>("ApplyOptions", RPC_ApplyOptions);
         RPC_UpdateIcon(0, CurrentPrefab, CurrentAmount);
-        InvokeRepeating(nameof(Repeat_1s), 1f, 1f);
+        float randomTime = Random.Range(2.5f, 3f);
+        InvokeRepeating(nameof(Repeat), randomTime, randomTime);
     }
 
     private void RPC_ApplyOptions(long sender, DrawerOptions options)
@@ -81,8 +97,8 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
         if (_znv.IsOwner())
         {
             CurrentColor = options.color;
+            PickupRange = Mathf.Min(ItemDrawers.MaxDrawerPickupRange.Value, options.pickupRange);
         }
-
         _text.color = options.color;
     }
 
@@ -142,13 +158,14 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
         _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", prefab, newAmount);
     }
 
-    private void Repeat_1s()
+    private bool DoRepeat => Player.m_localPlayer && ItemValid && PickupRange > 0;
+    private void Repeat()
     {
         if (!_znv.IsOwner()) return;
-        if (!ItemValid || !Player.m_localPlayer) return;
+        if (!DoRepeat) return;
 
         Vector3 vector = transform.position + Vector3.up;
-        foreach (ItemDrop component in ItemDrop.s_instances.Where(drop => Vector3.Distance(drop.transform.position, vector) < ItemDrawers.DrawerPickupRange.Value))
+        foreach (ItemDrop component in ItemDrop.s_instances.Where(drop => Vector3.Distance(drop.transform.position, vector) < PickupRange))
         {
             string goName = global::Utils.GetPrefabName(component.gameObject);
             if (goName != CurrentPrefab) continue;
@@ -173,7 +190,10 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
 
         if (user.IsCrouching())
         {
-            TextInput.instance.RequestText(this, "Enter text color: (#RRGGBB or R,G,B format)", 32);
+            CurrentOptions.drawer = this;
+            CurrentOptions.color = CurrentColor;
+            CurrentOptions.pickupRange = PickupRange;
+            ShowUI = true;
             return true;
         }
 
@@ -226,7 +246,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
 
         if (Player.m_localPlayer.IsCrouching())
         {
-            sb.AppendLine($"[<color=yellow><b>$KEY_Use</b></color>] to change text color");
+            sb.AppendLine($"[<color=yellow><b>$KEY_Use</b></color>] open settings");
             return sb.ToString().Localize();
         }
 
@@ -249,32 +269,70 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable, TextRecei
     {
         return "Item Drawer";
     }
-
-    public string GetText()
+    
+    private const int windowWidth = 300;
+    private const int windowHeight = 300;
+    private const int halfWindowWidth = windowWidth / 2;
+    private const int halfWindowHeight = windowHeight / 2;
+    public static void ProcessInput()
     {
-        return "";
+        if (Input.GetKeyDown(KeyCode.Escape) && ShowUI)
+        {
+            ShowUI = false;
+            Menu.instance.OnClose();
+        }
+    }
+    public static void ProcessGUI()
+    {
+        if (!ShowUI) return;
+        GUI.backgroundColor = Color.white;
+        Rect centerOfScreen = new(Screen.width / 2f - halfWindowWidth, Screen.height / 2f - halfWindowHeight, windowWidth, windowHeight);
+        GUI.Window(218102318, centerOfScreen, Window, "Item Drawer Options");
+    }
+    private static void Window(int id)
+    {
+        if (CurrentOptions.drawer == null || !CurrentOptions.drawer._znv.IsValid())
+        {
+            ShowUI = false;
+            return;
+        }
+        GUILayout.Label($"Current Drawer: <color=yellow><b>{CurrentOptions.drawer.LocalizedName}</b></color> ({CurrentOptions.drawer.CurrentAmount})");
+        int r = CurrentOptions.color.r;
+        int g = CurrentOptions.color.g;
+        int b = CurrentOptions.color.b;
+        GUILayout.Label($"Text Color: <color=#{r:X2}{g:X2}{b:X2}><b>0123456789</b></color>");
+        GUILayout.Label($"R: {r}");
+        r = (int)GUILayout.HorizontalSlider(r, 0, 255);
+        GUILayout.Label($"G: {g}");
+        g = (int)GUILayout.HorizontalSlider(g, 0, 255);
+        GUILayout.Label($"B: {b}");
+        b = (int)GUILayout.HorizontalSlider(b, 0, 255);
+        CurrentOptions.color = new Color32((byte)r, (byte)g, (byte)b, 255);
+        int pickupRange = CurrentOptions.pickupRange;
+        GUILayout.Space(16f);
+        GUILayout.Label($"Pickup Range: <color={(pickupRange > 0 ? "lime" : "red")}><b>{pickupRange}</b></color>"); 
+        pickupRange = (int)GUILayout.HorizontalSlider(pickupRange, 0, ItemDrawers.MaxDrawerPickupRange.Value);
+        CurrentOptions.pickupRange = pickupRange;
+        GUILayout.Space(16f);
+        if (GUILayout.Button("<color=lime>Apply</color>"))
+        {
+            CurrentOptions.drawer._znv.InvokeRPC(ZNetView.Everybody, "ApplyOptions", CurrentOptions);
+            ShowUI = false;
+        }
     }
 
-    public void SetText(string text)
+    [HarmonyPatch]
+    private static class IsVisible
     {
-        DrawerOptions options = new() { color = Color.red };
-        if (ColorUtility.TryParseHtmlString(text, out Color color))
+        [HarmonyTargetMethods, UsedImplicitly]
+        private static IEnumerable<MethodInfo> Methods()
         {
-            options.color = color;
+            yield return AccessTools.Method(typeof(TextInput), nameof(TextInput.IsVisible));
+            yield return AccessTools.Method(typeof(StoreGui), nameof(StoreGui.IsVisible));
         }
-        else
-        {
-            string[] split = text.Replace(" ", "").Split(',');
-            if (split.Length == 3)
-            {
-                if (byte.TryParse(split[0], out byte r) && byte.TryParse(split[1], out byte g) && byte.TryParse(split[2], out byte b))
-                {
-                    options.color = new Color32(r, g, b, 255);
-                }
-            }
-        }
-
-        _znv.InvokeRPC(ZNetView.Everybody, "ApplyOptions", options);
+        
+        [HarmonyPostfix, UsedImplicitly]
+        private static void SetTrue(ref bool __result) => __result |= ShowUI;
     }
 }
 
