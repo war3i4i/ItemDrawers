@@ -222,9 +222,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         string dropPrefab = item.m_dropPrefab?.name;
         if (string.IsNullOrEmpty(dropPrefab)) return false;
 
-        if (item.IsEquipable()) return false;
-
-        if (item.m_shared.m_maxStackSize <= 1 && !ItemDrawers.IncludeSet.Contains(dropPrefab)) return false;
+        if ((item.IsEquipable() || item.m_shared.m_maxStackSize <= 1) && !ItemDrawers.IncludeSet.Contains(dropPrefab)) return false;
 
         if (!string.IsNullOrEmpty(CurrentPrefab) && CurrentPrefab != dropPrefab) return false;
 
