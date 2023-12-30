@@ -148,7 +148,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         if (amount <= 0) return;
         if (ItemValid && CurrentPrefab != prefab)
         {
-            _znv.InvokeRPC(sender, "AddItem_Player", prefab, amount);
+            Utils.InstantiateAtPos(ZNetScene.instance.GetPrefab(prefab), amount, 1, transform.position + Vector3.up * 1.5f);
             return;
         }
 
@@ -295,17 +295,17 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             return;
         }
         GUILayout.Label($"Current Drawer: <color=yellow><b>{CurrentOptions.drawer.LocalizedName}</b></color> ({CurrentOptions.drawer.CurrentAmount})");
-        int r = CurrentOptions.color.r;
-        int g = CurrentOptions.color.g;
-        int b = CurrentOptions.color.b;
+        byte r = CurrentOptions.color.r;
+        byte g = CurrentOptions.color.g;
+        byte b = CurrentOptions.color.b;
         GUILayout.Label($"Text Color: <color=#{r:X2}{g:X2}{b:X2}><b>0123456789</b></color>");
         GUILayout.Label($"R: {r}");
-        r = (int)GUILayout.HorizontalSlider(r, 0, 255);
+        r = (byte)GUILayout.HorizontalSlider(r, 0, 255);
         GUILayout.Label($"G: {g}");
-        g = (int)GUILayout.HorizontalSlider(g, 0, 255);
+        g = (byte)GUILayout.HorizontalSlider(g, 0, 255);
         GUILayout.Label($"B: {b}");
-        b = (int)GUILayout.HorizontalSlider(b, 0, 255);
-        CurrentOptions.color = new Color32((byte)r, (byte)g, (byte)b, 255);
+        b = (byte)GUILayout.HorizontalSlider(b, 0, 255);
+        CurrentOptions.color = new Color32(r, g, b, 255);
         int pickupRange = CurrentOptions.pickupRange;
         GUILayout.Space(16f);
         GUILayout.Label($"Pickup Range: <color={(pickupRange > 0 ? "lime" : "red")}><b>{pickupRange}</b></color>"); 

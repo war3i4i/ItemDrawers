@@ -1,3 +1,6 @@
+1.0.7
+- ItemExclude config now works on any item, even on equipable one (can now exclude arrows, for example)
+
 1.0.6
 - Added options UI when you crouch + interact
 - Added DefaultColor + MaxDrawerPickupRange settings 
