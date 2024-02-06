@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using kg_ItemDrawers;
+using UnityEngine;
 
 namespace API;
 
@@ -25,6 +26,10 @@ public static class ItemDrawers_API
 
     public static List<Drawer> AllDrawers => _IsInstalled ? 
         ((List<ZNetView>)MI_GetAllDrawers.Invoke(null, null)).Select(znv => new Drawer(znv)).ToList() 
+        : new();
+    
+    public static List<Drawer> AllDrawersInRange(Vector3 pos, float range) => _IsInstalled ? 
+        ((List<ZNetView>)MI_GetAllDrawers.Invoke(null, null)).Where(znv => Vector3.Distance(znv.transform.position, pos) <= range).Select(znv => new Drawer(znv)).ToList() 
         : new();
     
     static ItemDrawers_API()

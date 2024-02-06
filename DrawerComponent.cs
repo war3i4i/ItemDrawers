@@ -186,6 +186,10 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
 
     public bool Interact(Humanoid user, bool hold, bool alt)
     {
+        if (!PrivateArea.CheckAccess(transform.position))
+            return true;
+        
+        
         if (!ItemValid) return false;
 
         if (user.IsCrouching())
