@@ -42,9 +42,6 @@
         <Reference Include="assembly_guiutils">
           <HintPath>Libs\assembly_guiutils.dll</HintPath>
         </Reference>
-        <Reference Include="assembly_postprocessing">
-          <HintPath>Libs\assembly_postprocessing.dll</HintPath>
-        </Reference>
         <Reference Include="assembly_utils">
           <HintPath>Libs\assembly_utils.dll</HintPath>
         </Reference>
@@ -61,9 +58,6 @@
         <Reference Include="System.Core"/>
         <Reference Include="System.Data"/>
         <Reference Include="System.Xml"/>
-        <Reference Include="ui_lib">
-          <HintPath>Libs\ui_lib.dll</HintPath>
-        </Reference>
         <Reference Include="Unity.TextMeshPro">
           <HintPath>Libs\Unity.TextMeshPro.dll</HintPath>
         </Reference>
@@ -141,9 +135,7 @@
 
 
     <Target Name="Copy" AfterTargets="Build">
-        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;D:\SteamLibrary\steamapps\common\Valheim\BepInEx\plugins\$(AssemblyName).dll&quot;" />
         <Exec Command="pdb2mdb.exe &quot;$(TargetDir)$(AssemblyName).dll&quot;" />
-        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll.mdb&quot; &quot;D:\SteamLibrary\steamapps\common\Valheim\BepInEx\plugins\$(AssemblyName).dll.mdb&quot;" />
         <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;$(ProjectDir)ThunderstorePackage\$(AssemblyName).dll&quot;" />
         <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll.mdb&quot; &quot;$(ProjectDir)ThunderstorePackage\$(AssemblyName).dll.mdb&quot;" />
     </Target>
