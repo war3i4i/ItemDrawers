@@ -13,12 +13,12 @@ using UnityEngine;
 using UnityEngine.Audio;
 
 namespace kg_ItemDrawers
-{
+{ 
     [BepInPlugin(GUID, GUID, VERSION)] 
     public class ItemDrawers : BaseUnityPlugin
     { 
         private const string GUID = "kg.ItemDrawers";
-        private const string VERSION = "1.0.8";
+        private const string VERSION = "1.0.9";
         private static ConfigSync configSync = new(GUID) { DisplayName = GUID, CurrentVersion = VERSION, MinimumRequiredVersion = VERSION, ModRequired = true, IsLocked = true};
         public static ItemDrawers _thistype;
         private static AssetBundle asset;
@@ -27,7 +27,7 @@ namespace kg_ItemDrawers
         public static ConfigEntry<int> MaxDrawerPickupRange;
         public static ConfigEntry<Vector3> DefaultColor;
         private static ConfigEntry<string> IncludeList;
-        public static HashSet<string> IncludeSet = new();
+        public static HashSet<string> IncludeSet = [];
         private static BuildPiece _drawer_wood;
         private static BuildPiece _drawer_stone;
         private static BuildPiece _drawer_marble;
@@ -139,7 +139,7 @@ namespace kg_ItemDrawers
         } 
 
         private void ResetList(object sender, EventArgs eventArgs) => 
-            IncludeSet = new HashSet<string>(IncludeList.Value.Replace(" ", "").Split(','));
+            IncludeSet = [..IncludeList.Value.Replace(" ", "").Split(',')];
         
         private static AssetBundle GetAssetBundle(string filename)
         {

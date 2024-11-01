@@ -1,3 +1,9 @@
+1.0.9
+- New patch fix
+
+1.0.8
+- Ashlands
+
 1.0.7
 - ItemExclude config now works on any item, even on equipable one (can now exclude arrows, for example)
 
