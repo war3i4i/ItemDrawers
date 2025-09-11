@@ -7,6 +7,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using BepInEx;
@@ -59,7 +60,7 @@ public class SyncedConfigEntry<T> : OwnConfigEntryBase
 
 public abstract class CustomSyncedValueBase
 {
-	public event Action? ValueChanged;
+	public Action? ValueChanged;
 
 	public object? LocalBaseValue;
 
@@ -100,6 +101,8 @@ public sealed class CustomSyncedValue<T> : CustomSyncedValueBase
 		get => (T)BoxedValue!;
 		set => BoxedValue = value;
 	}
+
+	public void Update() => ValueChanged?.Invoke();
 
 	public CustomSyncedValue(ConfigSync configSync, string identifier, T value = default!, int priority = 0) : base(configSync, identifier, typeof(T), priority)
 	{
@@ -237,6 +240,7 @@ public class ConfigSync
 			}
 		};
 	}
+	
 
 	[HarmonyPatch(typeof(ZRpc), "HandlePackage")]
 	private static class SnatchCurrentlyHandlingRPC
@@ -833,6 +837,30 @@ public class ConfigSync
 				__state ??= new Dictionary<Assembly, BufferingSocket>();
 				__state[Assembly.GetExecutingAssembly()] = bufferingSocket;
 			}
+		}
+		/*
+		235	0280	ldloc.1
+		236	0281	ldfld	class ISocket ZNetPeer::m_socket
+		237	0286	isinst	ZPlayFabSocket
+		238	028B	ldfld	string ZPlayFabSocket::m_remotePlayerId
+		 */
+		[HarmonyTranspiler]
+		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+		{
+			CodeMatcher matcher = new(instructions);
+			var socketField = AccessTools.Field(typeof(ZNetPeer), "m_socket");
+			var remotePlayerIdField = AccessTools.Field(typeof(ZPlayFabSocket), "m_remotePlayerId");
+			matcher.MatchForward(false,
+					new CodeMatch(OpCodes.Ldloc_1), 
+					new CodeMatch(OpCodes.Ldfld, socketField),
+					new CodeMatch(OpCodes.Isinst),
+					new CodeMatch(OpCodes.Ldfld, remotePlayerIdField));
+			if (matcher.IsInvalid) return instructions;
+			matcher.SetAndAdvance(OpCodes.Ldstr, "none");
+			matcher.SetOpcodeAndAdvance(OpCodes.Nop);
+			matcher.SetOpcodeAndAdvance(OpCodes.Nop);
+			matcher.SetOpcodeAndAdvance(OpCodes.Nop);
+			return matcher.InstructionEnumeration();
 		}
 
 		[HarmonyPostfix]

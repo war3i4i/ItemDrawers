@@ -9,20 +9,21 @@ using HarmonyLib;
 using JetBrains.Annotations;
 using PieceManager;
 using ServerSync;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Audio;
 
 namespace kg_ItemDrawers
-{ 
+{  
     [BepInPlugin(GUID, GUID, VERSION)] 
     public class ItemDrawers : BaseUnityPlugin
     { 
         private const string GUID = "kg.ItemDrawers";
-        private const string VERSION = "1.0.9";
+        private const string VERSION = "1.1.1";
         private static ConfigSync configSync = new(GUID) { DisplayName = GUID, CurrentVersion = VERSION, MinimumRequiredVersion = VERSION, ModRequired = true, IsLocked = true};
         public static ItemDrawers _thistype;
         private static AssetBundle asset;
-
+ 
         public static ConfigEntry<int> DrawerPickupRange;
         public static ConfigEntry<int> MaxDrawerPickupRange;
         public static ConfigEntry<Vector3> DefaultColor;
@@ -100,7 +101,7 @@ namespace kg_ItemDrawers
             _drawer_nomodel.Prefab.AddComponent<DrawerComponent>();
             _drawer_nomodel.Category.Set("Item Drawers");
             _drawer_nomodel.Crafting.Set(CraftingTable.None);
-            _drawer_nomodel.RequiredItems.Add("GreydwarfEye", 10, true);
+            _drawer_nomodel.RequiredItems.Add("GreydwarfEye", 10, true); 
             
             new Harmony(GUID).PatchAll();  
         }  
@@ -110,7 +111,7 @@ namespace kg_ItemDrawers
         {
             [UsedImplicitly]
             private static void Postfix(ZNetScene __instance) 
-            {
+            { 
                 __instance.m_namedPrefabs[Explosion.name.GetStableHashCode()] = Explosion;
 
                 _drawer_wood.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("woodwall").GetComponent<Piece>().m_placeEffect;
@@ -120,6 +121,28 @@ namespace kg_ItemDrawers
                 _drawer_stone_panel.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("stone_wall_1x1").GetComponent<Piece>().m_placeEffect;
                 _drawer_marble_panel.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("blackmarble_1x1").GetComponent<Piece>().m_placeEffect;
                 _drawer_nomodel.Prefab.GetComponent<Piece>().m_placeEffect = __instance.GetPrefab("woodwall").GetComponent<Piece>().m_placeEffect;
+            }
+        } 
+        
+        [HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.Awake))]
+        private static class FejdStartup_Awake_Patch 
+        {
+            private static bool done;
+
+            [UsedImplicitly]
+            private static void Postfix(FejdStartup __instance)
+            {
+                if (done) return;
+                done = true;
+                if (__instance.transform.Find("StartGame/Panel/JoinPanel/serverCount")?.GetComponent<TextMeshProUGUI>() is not { } tmp) return;
+
+                _drawer_wood.Prefab.GetComponentInChildren<TMP_Text>(true).font = tmp.font;
+                _drawer_stone.Prefab.GetComponentInChildren<TMP_Text>(true).font = tmp.font;
+                _drawer_marble.Prefab.GetComponentInChildren<TMP_Text>(true).font = tmp.font;
+                _drawer_wood_panel.Prefab.GetComponentInChildren<TMP_Text>(true).font = tmp.font;
+                _drawer_stone_panel.Prefab.GetComponentInChildren<TMP_Text>(true).font = tmp.font;
+                _drawer_marble_panel.Prefab.GetComponentInChildren<TMP_Text>(true).font = tmp.font;
+                _drawer_nomodel.Prefab.GetComponentInChildren<TMP_Text>(true).font = tmp.font;
             }
         }
         
@@ -136,7 +159,7 @@ namespace kg_ItemDrawers
                         audioSource.outputAudioMixerGroup = SFXgroup;
                 }
             }
-        } 
+        }
 
         private void ResetList(object sender, EventArgs eventArgs) => 
             IncludeSet = [..IncludeList.Value.Replace(" ", "").Split(',')];

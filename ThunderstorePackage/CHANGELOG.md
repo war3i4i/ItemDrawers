@@ -1,3 +1,9 @@
+1.1.1
+- New patch fix
+
+1.1.0
+- New patch fix
+
 1.0.9
 - New patch fix
 
