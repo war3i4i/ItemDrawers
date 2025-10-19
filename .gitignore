@@ -1,3 +1,4 @@
-﻿/obj/
+﻿/.idea/
+/obj/
 /bin/
 .gitignore
