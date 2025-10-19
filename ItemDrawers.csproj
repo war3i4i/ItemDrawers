@@ -40,13 +40,13 @@
           <HintPath>Libs\0Harmony.dll</HintPath>
         </Reference>
         <Reference Include="assembly_guiutils">
-          <HintPath>Libs\assembly_guiutils.dll</HintPath>
+          <HintPath>Libs\assembly_guiutils_publicized.dll</HintPath>
         </Reference>
         <Reference Include="assembly_utils">
-          <HintPath>Libs\assembly_utils.dll</HintPath>
+          <HintPath>Libs\assembly_utils_publicized.dll</HintPath>
         </Reference>
         <Reference Include="assembly_valheim">
-          <HintPath>Libs\assembly_valheim.dll</HintPath>
+          <HintPath>Libs\assembly_valheim_publicized.dll</HintPath>
         </Reference>
         <Reference Include="BepInEx">
           <HintPath>Libs\BepInEx.dll</HintPath>
@@ -54,10 +54,18 @@
         <Reference Include="fastJSON">
           <HintPath>Libs\fastJSON.dll</HintPath>
         </Reference>
-        <Reference Include="System"/>
-        <Reference Include="System.Core"/>
-        <Reference Include="System.Data"/>
-        <Reference Include="System.Xml"/>
+        <Reference Include="System">
+            <HintPath>Libs\System.dll</HintPath>
+        </Reference>
+        <Reference Include="System.Core">
+            <HintPath>Libs\System.Core.dll</HintPath>
+        </Reference>
+        <Reference Include="System.Data">
+            <HintPath>Libs\System.Data.dll</HintPath>
+        </Reference>
+        <Reference Include="System.Xml">
+            <HintPath>Libs\System.Xml.dll</HintPath>
+        </Reference>
         <Reference Include="Unity.TextMeshPro">
           <HintPath>Libs\Unity.TextMeshPro.dll</HintPath>
         </Reference>

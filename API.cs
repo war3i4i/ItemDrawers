@@ -17,8 +17,8 @@ public static class ItemDrawers_API
  
     public class Drawer(ZNetView znv)
     {
-        public string Prefab = znv.m_zdo.GetString("Prefab");
-        public int Amount = znv.m_zdo.GetInt("Amount");
+        public string Prefab = znv.GetZDO().GetString("Prefab");
+        public int Amount = znv.GetZDO().GetInt("Amount");
         public void Remove(int amount) { znv.ClaimOwnership(); znv.InvokeRPC("ForceRemove", amount); }
         public void Withdraw(int amount) => znv.InvokeRPC("WithdrawItem_Request", amount);
         public void Add(int amount) => znv.InvokeRPC("AddItem_Request", Prefab, amount);
@@ -48,5 +48,9 @@ public static class ItemDrawers_API
 //do not copy
 public static class ClientSide
 {
-    public static List<ZNetView> AllDrawers() => DrawerComponent.AllDrawers.Where(d => d._znv.IsValid()).Select(d => d._znv).ToList();
+    public static List<ZNetView> AllDrawers() =>
+        DrawerComponent.AllDrawers
+            .Where(d => d.m_nview && d.m_nview.IsValid())
+            .Select(d => d.m_nview)
+            .ToList();
 }
