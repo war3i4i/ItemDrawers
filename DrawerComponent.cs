@@ -11,18 +11,20 @@ using Random = UnityEngine.Random;
 
 namespace kg_ItemDrawers;
 
-public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
+public class DrawerComponent : Container, Interactable, Hoverable
 {
     public static readonly List<DrawerComponent> AllDrawers = [];
     private static Sprite _defaultSprite;
     public ZNetView _znv { private set; get; }
     private Image _image;
-    private TMP_Text _text; 
-    
+    private TMP_Text _text;
+
     //UI
     private static bool ShowUI;
     private static DrawerOptions CurrentOptions;
     //
+
+    private DrawerInventory _drawerInventory;
 
     public string CurrentPrefab
     {
@@ -42,7 +44,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         set => _znv.m_zdo.Set("PickupRange", value);
     }
 
-    private Color CurrentColor 
+    private Color CurrentColor
     {
         get => global::Utils.Vec3ToColor(_znv.m_zdo.GetVec3("Color", ItemDrawers.DefaultColor.Value));
         set => _znv.m_zdo.Set("Color", global::Utils.ColorToVec3(value));
@@ -72,8 +74,14 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     }
 
     private void OnDestroy() => AllDrawers.Remove(this);
-    private void Awake()
+
+    private new void Awake()
     {
+        base.Awake();
+        m_name = "Item Drawer";
+        // TastyChickenLegs/AutomaticFuel depends on a "Container" prefix
+        gameObject.name = "Container_ItemDrawer";
+
         _znv = GetComponent<ZNetView>();
         if (!_znv.IsValid()) return;
         AllDrawers.Add(this);
@@ -159,6 +167,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     }
 
     private bool DoRepeat => Player.m_localPlayer && ItemValid && PickupRange > 0;
+
     private void Repeat()
     {
         if (!_znv.IsOwner()) return;
@@ -167,6 +176,9 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         Vector3 vector = transform.position + Vector3.up;
         foreach (ItemDrop component in ItemDrop.s_instances.Where(drop => Vector3.Distance(drop.transform.position, vector) < PickupRange))
         {
+            if (component == null || component.m_nview == null || !component.m_nview.IsValid())
+                continue;
+
             string goName = global::Utils.GetPrefabName(component.gameObject);
             if (goName != CurrentPrefab) continue;
             if (!component.CanPickup(false))
@@ -184,12 +196,33 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         }
     }
 
-    public bool Interact(Humanoid user, bool hold, bool alt)
+    public Inventory GetDrawerInventory()
+    {
+        if (_drawerInventory == null)
+        {
+            _drawerInventory = new DrawerInventory(this);
+        }
+
+        if (m_nview == null || !m_nview.IsValid() || m_nview.GetZDO() == null)
+            return _drawerInventory;
+
+        string prefabName = m_nview.GetZDO().GetString("Prefab");
+        int amount = m_nview.GetZDO().GetInt("Amount");
+
+        if (string.IsNullOrEmpty(prefabName) || amount <= 0)
+            return _drawerInventory;
+
+        // TastyChickenLegs/AutomaticFuel depends on an inventory
+        _drawerInventory.UpdateContents(prefabName, amount);
+
+        return _drawerInventory;
+    }
+
+    public new bool Interact(Humanoid user, bool hold, bool alt)
     {
         if (!PrivateArea.CheckAccess(transform.position))
             return true;
-        
-        
+
         if (!ItemValid) return false;
 
         if (user.IsCrouching())
@@ -221,7 +254,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     }
 
 
-    public bool UseItem(Humanoid user, ItemDrop.ItemData item)
+    public new bool UseItem(Humanoid user, ItemDrop.ItemData item)
     {
         string dropPrefab = item.m_dropPrefab?.name;
         if (string.IsNullOrEmpty(dropPrefab)) return false;
@@ -237,7 +270,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         return true;
     }
 
-    public string GetHoverText()
+    public new string GetHoverText()
     {
         StringBuilder sb = new StringBuilder();
         if (!ItemValid)
@@ -267,15 +300,16 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         return sb.ToString().Localize();
     }
 
-    public string GetHoverName()
+    public new string GetHoverName()
     {
         return "Item Drawer";
     }
-    
+
     private const int windowWidth = 300;
     private const int windowHeight = 300;
     private const int halfWindowWidth = windowWidth / 2;
     private const int halfWindowHeight = windowHeight / 2;
+
     public static void ProcessInput()
     {
         if (Input.GetKeyDown(KeyCode.Escape) && ShowUI)
@@ -284,6 +318,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             Menu.instance.OnClose();
         }
     }
+
     public static void ProcessGUI()
     {
         if (!ShowUI) return;
@@ -291,6 +326,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         Rect centerOfScreen = new(Screen.width / 2f - halfWindowWidth, Screen.height / 2f - halfWindowHeight, windowWidth, windowHeight);
         GUI.Window(218102318, centerOfScreen, Window, "Item Drawer Options");
     }
+
     private static void Window(int id)
     {
         if (CurrentOptions.drawer == null || !CurrentOptions.drawer._znv.IsValid())
@@ -312,7 +348,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         CurrentOptions.color = new Color32(r, g, b, 255);
         int pickupRange = CurrentOptions.pickupRange;
         GUILayout.Space(16f);
-        GUILayout.Label($"Pickup Range: <color={(pickupRange > 0 ? "lime" : "red")}><b>{pickupRange}</b></color>"); 
+        GUILayout.Label($"Pickup Range: <color={(pickupRange > 0 ? "lime" : "red")}><b>{pickupRange}</b></color>");
         pickupRange = (int)GUILayout.HorizontalSlider(pickupRange, 0, ItemDrawers.MaxDrawerPickupRange.Value);
         CurrentOptions.pickupRange = pickupRange;
         GUILayout.Space(16f);
@@ -320,6 +356,33 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         {
             CurrentOptions.drawer._znv.InvokeRPC(ZNetView.Everybody, "ApplyOptions", CurrentOptions);
             ShowUI = false;
+        }
+    }
+
+    private class DrawerInventory : Inventory
+    {
+        public readonly DrawerComponent Drawer;
+
+        public DrawerInventory(DrawerComponent drawer)
+            : base("DrawerInventory", null, 1, 1)
+        {
+            Drawer = drawer;
+        }
+
+        public void UpdateContents(string prefabName, int amount)
+        {
+            RemoveAll();
+            if (string.IsNullOrEmpty(prefabName) || amount <= 0)
+                return;
+
+            var prefab = ZNetScene.instance.GetPrefab(prefabName);
+            if (!prefab || !prefab.TryGetComponent(out ItemDrop drop))
+                return;
+
+            var item = drop.m_itemData.Clone();
+            item.m_dropPrefab = prefab;
+            item.m_stack = amount;
+            AddItem(item);
         }
     }
 
@@ -332,9 +395,101 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             yield return AccessTools.Method(typeof(TextInput), nameof(TextInput.IsVisible));
             yield return AccessTools.Method(typeof(StoreGui), nameof(StoreGui.IsVisible));
         }
-        
+
         [HarmonyPostfix, UsedImplicitly]
         private static void SetTrue(ref bool __result) => __result |= ShowUI;
+    }
+
+    [HarmonyPatch(typeof(Container), nameof(GetInventory))]
+    private static class Drawer_GetInventory_Patch
+    {
+        [HarmonyPrefix]
+        private static bool Prefix(Container __instance, ref Inventory __result)
+        {
+            if (__instance is DrawerComponent drawer)
+            {
+                __result = drawer.GetDrawerInventory();
+                return false;
+            }
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveOneItem), typeof(ItemDrop.ItemData))]
+    private static class Inventory_RemoveOneItem_Patch
+    {
+        private static bool Prefix(Inventory __instance, ItemDrop.ItemData item)
+        {
+            if (__instance is DrawerInventory drawer)
+            {
+                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "WithdrawItem_Request", 1);
+                return false;
+            }
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), typeof(ItemDrop.ItemData), typeof(int))]
+    private static class Inventory_RemoveItem_ByItem_Patch
+    {
+        private static bool Prefix(Inventory __instance, ItemDrop.ItemData item, int amount)
+        {
+            if (__instance is DrawerInventory drawer)
+            {
+                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "WithdrawItem_Request", amount);
+                return false;
+            }
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), typeof(string), typeof(int), typeof(int), typeof(bool))]
+    private static class Inventory_RemoveItem_ByName_Patch
+    {
+        private static bool Prefix(Inventory __instance, string name, int amount, int itemQuality, bool worldLevelBased)
+        {
+            if (__instance is DrawerInventory drawer)
+            {
+                // TastyChickenLegs/AutomaticFuel uses this form of RemoveItem to refuel (the other patches are "just in case")
+                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "WithdrawItem_Request", amount);
+                return false;
+            }
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(Inventory), nameof(Inventory.RemoveItem), typeof(ItemDrop.ItemData))]
+    private static class Inventory_RemoveItem_SingleItem_Patch
+    {
+        private static bool Prefix(Inventory __instance, ItemDrop.ItemData item)
+        {
+            if (__instance is DrawerInventory drawer)
+            {
+                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "WithdrawItem_Request", item.m_stack);
+                return false;
+            }
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(Inventory), nameof(Inventory.CountItems), typeof(string), typeof(int), typeof(bool))]
+    private static class Inventory_CountItems_Patch
+    {
+        private static bool Prefix(Inventory __instance, ref int __result)
+        {
+            if (__instance is DrawerInventory drawer)
+            {
+                // The "hack":
+                // * TastyChickenLegs/AutomaticFuel: checks inventory through GetAllItems(name, accumulator) to find fuels
+                //   * Does not use CountItems, so keeps on working.
+                // * Azumatt/AzuCraftyBoxes: checks through a shortcut of CountItems whether to include a 'vanilla' container
+                //   * Uses the API.cs to process the drawers
+                //   * Needs this shortcut to avoid seeing inventories twice, and avoid updating a (custom) cached inventory instead of this drawer
+                __result = 0;
+                return false;
+            }
+            return true;
+        }
     }
 }
 
@@ -353,4 +508,3 @@ public static class Piece_OnDestroy_Patch
         }
     }
 }
-
