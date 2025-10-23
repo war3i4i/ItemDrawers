@@ -103,7 +103,7 @@ namespace kg_ItemDrawers
             _drawer_nomodel.Crafting.Set(CraftingTable.None);
             _drawer_nomodel.RequiredItems.Add("GreydwarfEye", 10, true); 
             
-            new Harmony(GUID).PatchAll();  
+            new Harmony(GUID).PatchAll();
         }  
     
         [HarmonyPatch(typeof(ZNetScene),nameof(ZNetScene.Awake))]
