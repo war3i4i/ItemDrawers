@@ -422,7 +422,7 @@ public class DrawerComponent : Container, Interactable, Hoverable
         {
             if (__instance is DrawerInventory drawer)
             {
-                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "WithdrawItem_Request", 1);
+                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "ForceRemove", 1);
                 return false;
             }
             return true;
@@ -436,7 +436,7 @@ public class DrawerComponent : Container, Interactable, Hoverable
         {
             if (__instance is DrawerInventory drawer)
             {
-                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "WithdrawItem_Request", amount);
+                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "ForceRemove", amount);
                 return false;
             }
             return true;
@@ -451,7 +451,7 @@ public class DrawerComponent : Container, Interactable, Hoverable
             if (__instance is DrawerInventory drawer)
             {
                 // TastyChickenLegs/AutomaticFuel uses this form of RemoveItem to refuel (the other patches are "just in case")
-                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "WithdrawItem_Request", amount);
+                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "ForceRemove", amount);
                 return false;
             }
             return true;
@@ -465,7 +465,7 @@ public class DrawerComponent : Container, Interactable, Hoverable
         {
             if (__instance is DrawerInventory drawer)
             {
-                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "WithdrawItem_Request", item.m_stack);
+                drawer.Drawer._znv.InvokeRPC(ZNetView.Everybody, "ForceRemove", item.m_stack);
                 return false;
             }
             return true;
