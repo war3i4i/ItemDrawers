@@ -128,7 +128,7 @@ namespace kg_ItemDrawers
         private static class FejdStartup_Awake_Patch 
         {
             private static bool done;
-
+ 
             [UsedImplicitly]
             private static void Postfix(FejdStartup __instance)
             {

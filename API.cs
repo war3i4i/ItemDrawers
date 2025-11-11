@@ -14,14 +14,15 @@ public static class ItemDrawers_API
 {
     private static readonly bool _IsInstalled;
     private static readonly MethodInfo MI_GetAllDrawers;
- 
+  
     public class Drawer(ZNetView znv)
     {
         public string Prefab = znv.m_zdo.GetString("Prefab");
         public int Amount = znv.m_zdo.GetInt("Amount");
+        public int Quality = znv.m_zdo.GetInt("Quality", 1);
         public void Remove(int amount) { znv.ClaimOwnership(); znv.InvokeRPC("ForceRemove", amount); }
         public void Withdraw(int amount) => znv.InvokeRPC("WithdrawItem_Request", amount);
-        public void Add(int amount) => znv.InvokeRPC("AddItem_Request", Prefab, amount);
+        public void Add(int amount, int quality) => znv.InvokeRPC("AddItem_Request", Prefab, amount, quality);
     }
 
     public static List<Drawer> AllDrawers => _IsInstalled ? 
@@ -34,7 +35,7 @@ public static class ItemDrawers_API
     
     static ItemDrawers_API()
     {
-        if (Type.GetType("API.ClientSide, kg_ItemDrawers") is not { } drawersAPI)
+        if (Type.GetType("API.ClientSideV2, kg_ItemDrawers") is not { } drawersAPI)
         {
             _IsInstalled = false;
             return;
@@ -43,10 +44,10 @@ public static class ItemDrawers_API
         _IsInstalled = true;
         MI_GetAllDrawers = drawersAPI.GetMethod("AllDrawers", BindingFlags.Public | BindingFlags.Static);
     }
-} 
+}
 
 //do not copy
-public static class ClientSide
+public static class ClientSideV2
 {
     public static List<ZNetView> AllDrawers() => DrawerComponent.AllDrawers.Where(d => d._znv.IsValid()).Select(d => d._znv).ToList();
 }

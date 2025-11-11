@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -42,11 +43,18 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         set => _znv.m_zdo.Set("PickupRange", value);
     }
 
+    public int Quality
+    {
+        get => _znv.m_zdo.GetInt("Quality", 1);
+        set => _znv.m_zdo.Set("Quality", value);
+    }
+    
     private Color CurrentColor 
     {
         get => global::Utils.Vec3ToColor(_znv.m_zdo.GetVec3("Color", ItemDrawers.DefaultColor.Value));
         set => _znv.m_zdo.Set("Color", global::Utils.ColorToVec3(value));
     }
+
 
     public bool ItemValid => !string.IsNullOrEmpty(CurrentPrefab) && ObjectDB.instance.m_itemByHash.ContainsKey(CurrentPrefab.GetStableHashCode());
     private int ItemMaxStack => ObjectDB.instance.m_itemByHash[CurrentPrefab.GetStableHashCode()].GetComponent<ItemDrop>().m_itemData.m_shared.m_maxStackSize;
@@ -81,8 +89,8 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         _defaultSprite ??= _image.sprite;
         _text = transform.Find("Cube/Canvas/Text").GetComponent<TMP_Text>();
         _text.color = CurrentColor;
-        _znv.Register<string, int>("AddItem_Request", RPC_AddItem);
-        _znv.Register<string, int>("AddItem_Player", RPC_AddItem_Player);
+        _znv.Register<string, int, int>("AddItem_Request", RPC_AddItem);
+        _znv.Register<string, int, int>("AddItem_Player", RPC_AddItem_Player);
         _znv.Register<int>("WithdrawItem_Request", RPC_WithdrawItem_Request);
         _znv.Register<string, int>("UpdateIcon", RPC_UpdateIcon);
         _znv.Register<int>("ForceRemove", RPC_ForceRemove);
@@ -115,6 +123,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         {
             CurrentPrefab = "";
             CurrentAmount = 0;
+            Quality = 1;
             _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", "", 0);
             return;
         }
@@ -122,11 +131,11 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         if (amount <= 0) return;
         amount = Mathf.Min(amount, CurrentAmount);
         CurrentAmount -= amount;
-        _znv.InvokeRPC(sender, "AddItem_Player", CurrentPrefab, amount);
+        _znv.InvokeRPC(sender, "AddItem_Player", CurrentPrefab, amount, Quality);
         _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
     }
 
-    private void RPC_AddItem_Player(long _, string prefab, int amount) => Utils.InstantiateItem(ZNetScene.instance.GetPrefab(prefab), amount, 1);
+    private void RPC_AddItem_Player(long _, string prefab, int amount, int quality) => Utils.InstantiateItem(ZNetScene.instance.GetPrefab(prefab), amount, quality);
 
     private void RPC_UpdateIcon(long _, string prefab, int amount)
     {
@@ -142,19 +151,25 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         _text.gameObject.SetActive(true);
     }
 
-    private void RPC_AddItem(long sender, string prefab, int amount)
+    private void RPC_AddItem(long sender, string prefab, int amount, int quality)
     {
         if (!_znv.IsOwner()) return;
         if (amount <= 0) return;
-        if (ItemValid && CurrentPrefab != prefab)
+        quality = Math.Max(1, quality);
+        string currentPrefab = CurrentPrefab;
+        if (ItemValid && (currentPrefab != prefab || Quality != quality))
         {
-            Utils.InstantiateAtPos(ZNetScene.instance.GetPrefab(prefab), amount, 1, transform.position + Vector3.up * 1.5f);
+            Utils.InstantiateAtPos(ZNetScene.instance.GetPrefab(currentPrefab), CurrentAmount, Quality, transform.position + Vector3.up * 1.5f);
             return;
         }
-
+        
         int newAmount = ItemValid ? (CurrentAmount + amount) : amount;
         CurrentAmount = newAmount;
-        if (CurrentPrefab != prefab) CurrentPrefab = prefab;
+        if (currentPrefab != prefab)
+        {
+            currentPrefab = prefab;
+            Quality = quality;
+        }
         _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", prefab, newAmount);
     }
 
@@ -170,7 +185,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             string goName = global::Utils.GetPrefabName(component.gameObject);
             if (goName != CurrentPrefab) continue;
             if (!component.CanPickup(false))
-            {
+            { 
                 component.RequestOwn();
                 continue;
             }
@@ -189,9 +204,6 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         if (!PrivateArea.CheckAccess(transform.position))
             return true;
         
-        
-        if (!ItemValid) return false;
-
         if (user.IsCrouching())
         {
             CurrentOptions.drawer = this;
@@ -200,6 +212,8 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             ShowUI = true;
             return true;
         }
+        
+        if (!ItemValid) return false;
 
         if (Input.GetKey(KeyCode.LeftAlt))
         {
@@ -209,10 +223,11 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
 
         if (Input.GetKey(KeyCode.LeftShift))
         {
-            int amount = Utils.CustomCountItems(CurrentPrefab, 1);
+            int quality = Quality;
+            int amount = Utils.CustomCountItems(CurrentPrefab, quality);
             if (amount <= 0) return true;
-            Utils.CustomRemoveItems(CurrentPrefab, amount, 1);
-            _znv.InvokeRPC("AddItem_Request", CurrentPrefab, amount);
+            Utils.CustomRemoveItems(CurrentPrefab, amount, quality);
+            _znv.InvokeRPC("AddItem_Request", CurrentPrefab, amount, quality);
             return true;
         }
 
@@ -228,42 +243,43 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
 
         if ((item.IsEquipable() || item.m_shared.m_maxStackSize <= 1) && !ItemDrawers.IncludeSet.Contains(dropPrefab)) return false;
 
-        if (!string.IsNullOrEmpty(CurrentPrefab) && CurrentPrefab != dropPrefab) return false;
+        if (!string.IsNullOrEmpty(CurrentPrefab) && (CurrentPrefab != dropPrefab || Quality != item.m_quality)) return false;
 
         int amount = item.m_stack;
         if (amount <= 0) return false;
         user.m_inventory.RemoveItem(item);
-        _znv.InvokeRPC("AddItem_Request", dropPrefab, amount);
+        _znv.InvokeRPC("AddItem_Request", dropPrefab, amount, item.m_quality);
         return true;
     }
 
     public string GetHoverText()
     {
         StringBuilder sb = new StringBuilder();
-        if (!ItemValid)
-        {
-            sb.AppendLine("<color=yellow><b>Use Hotbar to add item</b></color>");
-            return sb.ToString().Localize();
-        }
-
         if (Player.m_localPlayer.IsCrouching())
         {
             sb.AppendLine($"[<color=yellow><b>$KEY_Use</b></color>] open settings");
             return sb.ToString().Localize();
         }
-
-        sb.AppendLine($"<color=yellow><b>{LocalizedName}</b></color> ({CurrentAmount})");
+        
+        if (!ItemValid)
+        {
+            sb.AppendLine("<color=yellow><b>Use Hotbar to add item</b></color>");
+            return sb.ToString().Localize();
+        }
+        int quality = Quality;
+        string qualityString = quality > 1 ? $" (Quality: {quality})" : "";
+        sb.AppendLine($"<color=yellow><b>{LocalizedName}{qualityString}</b></color> ({CurrentAmount})");
         sb.AppendLine("<color=yellow><b>Use Hotbar to add item</b></color>\n");
         if (CurrentAmount <= 0)
         {
             sb.AppendLine($"[<color=yellow><b>$KEY_Use</b></color>] or [<color=yellow><b>Left Alt + $KEY_Use</b></color>] to clear");
-            sb.AppendLine($"[<color=yellow><b>Left Shift + $KEY_Use</b></color>] to deposit all <color=yellow><b>{LocalizedName}</b></color> ({Utils.CustomCountItems(CurrentPrefab, 1)})");
+            sb.AppendLine($"[<color=yellow><b>Left Shift + $KEY_Use</b></color>] to deposit all <color=yellow><b>{LocalizedName}</b></color> ({Utils.CustomCountItems(CurrentPrefab, quality)})");
             return sb.ToString().Localize();
         }
 
         sb.AppendLine($"[<color=yellow><b>$KEY_Use</b></color>] to withdraw stack ({ItemMaxStack})");
         sb.AppendLine($"[<color=yellow><b>Left Alt + $KEY_Use</b></color>] to withdraw single item");
-        sb.AppendLine($"[<color=yellow><b>Left Shift + $KEY_Use</b></color>] to deposit all <color=yellow><b>{LocalizedName}</b></color> ({Utils.CustomCountItems(CurrentPrefab, 1)})");
+        sb.AppendLine($"[<color=yellow><b>Left Shift + $KEY_Use</b></color>] to deposit all <color=yellow><b>{LocalizedName}{qualityString}</b></color> ({Utils.CustomCountItems(CurrentPrefab, quality)})");
         return sb.ToString().Localize();
     }
 
