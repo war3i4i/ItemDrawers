@@ -121,6 +121,7 @@
       <EmbeddedResource Include="kg_itemdrawers" />
     </ItemGroup>
     <ItemGroup>
+      <Content Include=".gitignore" />
       <Content Include="ThunderstorePackage\CHANGELOG.md" />
       <Content Include="ThunderstorePackage\icon.png" />
       <Content Include="ThunderstorePackage\kg_ItemDrawers.dll" />

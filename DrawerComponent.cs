@@ -18,7 +18,10 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     private static Sprite _defaultSprite;
     public ZNetView _znv { private set; get; }
     private Image _image;
-    private TMP_Text _text; 
+    private TMP_Text _text;
+    private Transform _stars;
+    private TMP_Text _starsText;
+    private Transform _starIcon;
     
     //UI
     private static bool ShowUI;
@@ -89,13 +92,16 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         _defaultSprite ??= _image.sprite;
         _text = transform.Find("Cube/Canvas/Text").GetComponent<TMP_Text>();
         _text.color = CurrentColor;
+        _stars = transform.Find("Cube/Canvas/Stars");
+        _starsText = _stars.Find("Quality").GetComponent<TMP_Text>();
+        _starIcon = _stars.Find("Img");
         _znv.Register<string, int, int>("AddItem_Request", RPC_AddItem);
         _znv.Register<string, int, int>("AddItem_Player", RPC_AddItem_Player);
         _znv.Register<int>("WithdrawItem_Request", RPC_WithdrawItem_Request);
-        _znv.Register<string, int>("UpdateIcon", RPC_UpdateIcon);
+        _znv.Register<string, int, int>("UpdateIcon", RPC_UpdateIcon);
         _znv.Register<int>("ForceRemove", RPC_ForceRemove);
         _znv.Register<DrawerOptions>("ApplyOptions", RPC_ApplyOptions);
-        RPC_UpdateIcon(0, CurrentPrefab, CurrentAmount);
+        RPC_UpdateIcon(0, CurrentPrefab, CurrentAmount, Quality);
         float randomTime = Random.Range(2.5f, 3f);
         InvokeRepeating(nameof(Repeat), randomTime, randomTime);
     }
@@ -114,7 +120,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     {
         amount = Mathf.Min(amount, CurrentAmount);
         CurrentAmount -= amount;
-        _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
+        _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount, Quality);
     }
 
     private void RPC_WithdrawItem_Request(long sender, int amount)
@@ -124,7 +130,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             CurrentPrefab = "";
             CurrentAmount = 0;
             Quality = 1;
-            _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", "", 0);
+            _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", "", 0, 0);
             return;
         }
 
@@ -132,23 +138,32 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         amount = Mathf.Min(amount, CurrentAmount);
         CurrentAmount -= amount;
         _znv.InvokeRPC(sender, "AddItem_Player", CurrentPrefab, amount, Quality);
-        _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
+        _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount, Quality);
     }
 
     private void RPC_AddItem_Player(long _, string prefab, int amount, int quality) => Utils.InstantiateItem(ZNetScene.instance.GetPrefab(prefab), amount, quality);
 
-    private void RPC_UpdateIcon(long _, string prefab, int amount)
+    private void RPC_UpdateIcon(long _, string prefab, int amount, int quality)
     {
         if (!ItemValid)
         {
             _image.sprite = _defaultSprite;
+            _stars.gameObject.SetActive(false);
             _text.gameObject.SetActive(false);
-            return;
+            return; 
         }
 
         _image.sprite = ObjectDB.instance.GetItemPrefab(prefab).GetComponent<ItemDrop>().m_itemData.GetIcon();
         _text.text = amount.ToString();
         _text.gameObject.SetActive(true);
+        
+        _stars.gameObject.SetActive(quality > 1);
+        if (quality > 1)
+        {
+            _starsText.text = quality.ToString();
+            RectTransform starRect = _starIcon.GetComponent<RectTransform>();
+            _starIcon.position = new Vector3(quality >= 10 ? 9f : 0f, 0f, 0f);
+        }
     }
 
     private void RPC_AddItem(long sender, string prefab, int amount, int quality)
@@ -170,7 +185,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             currentPrefab = prefab;
             Quality = quality;
         }
-        _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", prefab, newAmount);
+        _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", prefab, newAmount, quality);
     }
 
     private bool DoRepeat => Player.m_localPlayer && ItemValid && PickupRange > 0;
@@ -195,7 +210,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             component.m_nview.ClaimOwnership();
             ZNetScene.instance.Destroy(component.gameObject);
             CurrentAmount += amount;
-            _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount);
+            _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount, Quality);
         }
     }
 

@@ -107,7 +107,7 @@ namespace kg_ItemDrawers
         }  
     
         [HarmonyPatch(typeof(ZNetScene),nameof(ZNetScene.Awake))]
-        private static class ZNetScene_Awake_Patch
+        private static class ZNetScene_Awake_Patch 
         {
             [UsedImplicitly]
             private static void Postfix(ZNetScene __instance) 
