@@ -60,6 +60,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
 
 
     public bool ItemValid => !string.IsNullOrEmpty(CurrentPrefab) && ObjectDB.instance.m_itemByHash.ContainsKey(CurrentPrefab.GetStableHashCode());
+    public bool ItemValidCheck(string prefab) => !string.IsNullOrEmpty(prefab) && ObjectDB.instance.m_itemByHash.ContainsKey(prefab.GetStableHashCode());
     private int ItemMaxStack => ObjectDB.instance.m_itemByHash[CurrentPrefab.GetStableHashCode()].GetComponent<ItemDrop>().m_itemData.m_shared.m_maxStackSize;
     private string LocalizedName => ObjectDB.instance.m_itemByHash[CurrentPrefab.GetStableHashCode()].GetComponent<ItemDrop>().m_itemData.m_shared.m_name.Localize();
 
@@ -145,14 +146,13 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
 
     private void RPC_UpdateIcon(long _, string prefab, int amount, int quality)
     {
-        if (!ItemValid)
+        if (!ItemValidCheck(prefab))
         {
             _image.sprite = _defaultSprite;
             _stars.gameObject.SetActive(false);
             _text.gameObject.SetActive(false);
             return; 
         }
-
         _image.sprite = ObjectDB.instance.GetItemPrefab(prefab).GetComponent<ItemDrop>().m_itemData.GetIcon();
         _text.text = amount.ToString();
         _text.gameObject.SetActive(true);
@@ -162,7 +162,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
         {
             _starsText.text = quality.ToString();
             RectTransform starRect = _starIcon.GetComponent<RectTransform>();
-            _starIcon.position = new Vector3(quality >= 10 ? 9f : 0f, 0f, 0f);
+            _starIcon.localPosition = new Vector3(quality >= 10 ? 9f : 0f, 5.25f, 0f);
         }
     }
 
@@ -177,12 +177,12 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             Utils.InstantiateAtPos(ZNetScene.instance.GetPrefab(currentPrefab), CurrentAmount, Quality, transform.position + Vector3.up * 1.5f);
             return;
         }
-        
+         
         int newAmount = ItemValid ? (CurrentAmount + amount) : amount;
         CurrentAmount = newAmount;
         if (currentPrefab != prefab)
         {
-            currentPrefab = prefab;
+            CurrentPrefab = prefab;
             Quality = quality;
         }
         _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", prefab, newAmount, quality);
@@ -193,16 +193,18 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
     {
         if (!_znv.IsOwner()) return;
         if (!DoRepeat) return;
-
+        string prefab = CurrentPrefab;
+        int quality = Quality;
         Vector3 vector = transform.position + Vector3.up;
         foreach (ItemDrop component in ItemDrop.s_instances.Where(drop => Vector3.Distance(drop.transform.position, vector) < PickupRange))
         {
-            string goName = global::Utils.GetPrefabName(component.gameObject);
-            if (goName != CurrentPrefab) continue;
+            string goName = component.m_itemData.m_dropPrefab.name;
+            if (goName != prefab) continue;
+            if (component.m_itemData.m_quality != quality) continue;
             if (!component.CanPickup(false))
             { 
                 component.RequestOwn();
-                continue;
+                continue; 
             }
 
             Instantiate(ItemDrawers.Explosion, component.transform.position, Quaternion.identity);
@@ -210,7 +212,7 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
             component.m_nview.ClaimOwnership();
             ZNetScene.instance.Destroy(component.gameObject);
             CurrentAmount += amount;
-            _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", CurrentPrefab, CurrentAmount, Quality);
+            _znv.InvokeRPC(ZNetView.Everybody, "UpdateIcon", prefab, CurrentAmount, quality);
         }
     }
 
@@ -253,10 +255,15 @@ public class DrawerComponent : MonoBehaviour, Interactable, Hoverable
 
     public bool UseItem(Humanoid user, ItemDrop.ItemData item)
     {
+        if (item.m_customData.Count > 0)
+        {
+            MessageHud.instance.ShowMessage(MessageHud.MessageType.Center, "<color=red><b>Cannot store items with custom data</b></color>");
+            return false;
+        }
         string dropPrefab = item.m_dropPrefab?.name;
         if (string.IsNullOrEmpty(dropPrefab)) return false;
 
-        if ((item.IsEquipable() || item.m_shared.m_maxStackSize <= 1) && !ItemDrawers.IncludeSet.Contains(dropPrefab)) return false;
+        if (ItemDrawers.ExcludeSet.Contains(dropPrefab) && !Player.m_debugMode) return false;
 
         if (!string.IsNullOrEmpty(CurrentPrefab) && (CurrentPrefab != dropPrefab || Quality != item.m_quality)) return false;
 
